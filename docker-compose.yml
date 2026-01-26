@@ -23,7 +23,3 @@ services:
 networks:
   seller-engine-network:
     driver: bridge
-
-git branch -M main
-git remote add origin https://github.com/jstella96/seller_engine_db_server.git
-git push -u origin main
