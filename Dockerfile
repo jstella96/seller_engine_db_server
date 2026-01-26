@@ -14,7 +14,7 @@ RUN npm ci --only=production
 COPY . .
 
 # 포트 노출
-EXPOSE 3000
+EXPOSE 3100
 
 # 애플리케이션 실행
 CMD ["node", "server.js"]

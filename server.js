@@ -9,7 +9,7 @@ const { getConnection } = require("./db-connection");
 const dbService = require("./db-service");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3100;
 
 app.use(cors());
 // Express 4.16.0+ 부터 body-parser가 내장되어 있음

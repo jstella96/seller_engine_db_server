@@ -7,9 +7,9 @@ services:
       dockerfile: Dockerfile
     container_name: seller-engine-api
     ports:
-      - "3100:3000"
+      - "3100:3100"
     environment:
-      - PORT=3000
+      - PORT=3100
       - NODE_ENV=production
     restart: unless-stopped
     networks:
@@ -24,3 +24,6 @@ networks:
   seller-engine-network:
     driver: bridge
 
+git branch -M main
+git remote add origin https://github.com/jstella96/seller_engine_db_server.git
+git push -u origin main
