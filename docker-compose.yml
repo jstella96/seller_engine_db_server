@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  seller-engine-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: seller-engine-api
+    ports:
+      - "3100:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - seller-engine-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  seller-engine-network:
+    driver: bridge
+
