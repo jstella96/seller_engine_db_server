@@ -5,6 +5,7 @@
 
 const mysql = require("mysql2/promise");
 const os = require("os");
+const crypto = require("crypto");
 
 // DB 연결 풀 저장소 (key: dburl, value: connection pool)
 const connectionPools = {};
@@ -18,7 +19,9 @@ const connectionPools = {};
  * @returns {Promise<Object>} DB 연결 풀 객체
  */
 async function getConnectionPool(dburl, dbuser, dbpassword) {
-  const poolKey = `${dburl}_${dbuser}`;
+  // 비밀번호 해시를 포함한 poolKey 생성 (보안: 비밀번호가 변경되면 다른 풀 사용)
+  const passwordHash = crypto.createHash('sha256').update(dbpassword || '').digest('hex').substring(0, 16);
+  const poolKey = `${dburl}_${dbuser}_${passwordHash}`;
 
   console.log(
     `[DB Connection] getConnectionPool 호출 - dburl: ${dburl}, user: ${dbuser}, poolKey: ${poolKey}`
@@ -74,9 +77,9 @@ async function getConnectionPool(dburl, dbuser, dbpassword) {
     dateStrings: true,
     // 타임아웃 설정
     connectTimeout: 10000, // 연결 타임아웃 (10초)
-    acquireTimeout: 10000, // 연결 획득 타임아웃 (10초)
-    timeout: 60000, // 쿼리 타임아웃 (60초)
-    idleTimeout: 600000, // 유휴 연결 타임아웃 (10분)
+    acquireTimeout: 10000, // 연결 획득 타임아웃 (10초) - Pool 레벨 옵션
+    idleTimeout: 7200000, // 유휴 연결 타임아웃 (2시간)
+    // 참고: 쿼리 타임아웃은 timeout 옵션이 아니라 쿼리 실행 시 별도로 설정해야 함
     // 연결 유지 설정
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
@@ -123,7 +126,9 @@ async function getConnection(dburl, dbuser, dbpassword) {
     `[DB Connection] getConnection 호출 - dburl: ${dburl}, user: ${dbuser}`
   );
   
-  const poolKey = `${dburl}_${dbuser}`;
+  // 비밀번호 해시를 포함한 poolKey 생성
+  const passwordHash = crypto.createHash('sha256').update(dbpassword || '').digest('hex').substring(0, 16);
+  const poolKey = `${dburl}_${dbuser}_${passwordHash}`;
   let pool = await getConnectionPool(dburl, dbuser, dbpassword);
   
   // 연결 획득 시도 (최대 1회 재시도)
@@ -178,8 +183,10 @@ async function getConnection(dburl, dbuser, dbpassword) {
  * @param {string} dburl - 데이터베이스 URL
  * @param {string} dbuser - 데이터베이스 사용자명
  */
-async function closePool(dburl, dbuser) {
-  const poolKey = `${dburl}_${dbuser}`;
+async function closePool(dburl, dbuser, dbpassword) {
+  // 비밀번호 해시를 포함한 poolKey 생성
+  const passwordHash = crypto.createHash('sha256').update(dbpassword || '').digest('hex').substring(0, 16);
+  const poolKey = `${dburl}_${dbuser}_${passwordHash}`;
   console.log(
     `[DB Connection] closePool 호출 - dburl: ${dburl}, user: ${dbuser}, poolKey: ${poolKey}`
   );

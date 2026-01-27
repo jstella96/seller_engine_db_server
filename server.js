@@ -7,6 +7,7 @@ const express = require("express");
 const cors = require("cors");
 const { getConnection } = require("./db-connection");
 const dbService = require("./db-service");
+const { verifyJWT } = require("./jwt-utils");
 
 const app = express();
 const PORT = process.env.PORT || 3100;
@@ -26,16 +27,35 @@ function withConnection(handler) {
   return async (req, res) => {
     let connection;
     try {
-      const { dburl, dbuser, dbpassword } = req.body;
+      const { dburl, dbuser, dbpassword, dbtoken} = req.body;
       
-      if (!dburl || !dbuser || !dbpassword) {
+      if (!dburl || !dbuser) {
         return res.status(400).json({
           success: false,
-          error: "필수 파라미터가 누락되었습니다: dburl, dbuser, dbpassword",
+          error: "필수 파라미터가 누락되었습니다: dburl, dbuser",
         });
       }
 
-      connection = await getConnection(dburl, dbuser, dbpassword);
+      // dbtoken이 있으면 토큰에서 비밀번호 추출, 없으면 dbpassword 사용
+      let finalPassword = dbpassword;
+      if (dbtoken) {
+        const payload = verifyJWT(dbtoken);
+        if (!payload || !payload.dbpassword) {
+          return res.status(400).json({
+            success: false,
+            error: "유효하지 않은 토큰입니다.",
+          });
+        }
+        console.log(`[API] 토큰에서 비밀번호 추출`);
+        finalPassword = payload.dbpassword;
+      } else if (!dbpassword) {
+        return res.status(400).json({
+          success: false,
+          error: "dbpassword 또는 dbtoken 중 하나는 필수입니다.",
+        });
+      }
+
+      connection = await getConnection(dburl, dbuser, finalPassword);
       await handler(connection, req, res);
     } catch (error) {
       if (connection) {
