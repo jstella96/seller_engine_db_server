@@ -71,7 +71,7 @@ async function getConnectionPool(dburl, dbuser, dbpassword) {
     password: dbpassword,
     database: database,
     waitForConnections: true,
-    connectionLimit: 5,
+    connectionLimit: 10,
     queueLimit: 0,
     multipleStatements: true,
     dateStrings: true,
