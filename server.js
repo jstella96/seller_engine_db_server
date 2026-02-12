@@ -19,6 +19,56 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 /**
+ * 요청/응답 시간 헤더 기록 미들웨어
+ */
+app.use((req, res, next) => {
+  // 요청받은 시간 기록
+  const requestTime = Date.now();
+  const requestTimeISO = new Date(requestTime).toISOString();
+  
+  req.requestTime = requestTime;
+  req.requestTimeISO = requestTimeISO;
+  
+  // 응답 헤더에 요청받은 시간 추가
+  res.setHeader('X-Request-Time', requestTimeISO);
+  
+  // 원본 메서드들 저장
+  const originalSend = res.send;
+  const originalJson = res.json;
+  const originalSendFile = res.sendFile;
+  
+  // 공통 헤더 추가 함수
+  const addTimingHeaders = () => {
+    const responseTime = Date.now();
+    const responseTimeISO = new Date(responseTime).toISOString();
+    const processingTime = responseTime - requestTime;
+    
+    res.setHeader('X-Response-Time', responseTimeISO);
+    res.setHeader('X-Processing-Time', `${processingTime}ms`);
+  };
+  
+  // res.send 오버라이드
+  res.send = function(data) {
+    addTimingHeaders();
+    return originalSend.call(this, data);
+  };
+  
+  // res.json 오버라이드
+  res.json = function(data) {
+    addTimingHeaders();
+    return originalJson.call(this, data);
+  };
+  
+  // res.sendFile 오버라이드 (선택사항)
+  res.sendFile = function(...args) {
+    addTimingHeaders();
+    return originalSendFile.apply(this, args);
+  };
+  
+  next();
+});
+
+/**
  * DB Connection 자동 관리 래퍼 함수
  * @param {Function} handler - (connection, req, res) => Promise<void>
  * @returns {Function} Express 라우트 핸들러
